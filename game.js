@@ -81,9 +81,15 @@ const canvas = document.getElementById('map-canvas');
 const ctx = canvas.getContext('2d');
 
 function resizeCanvas() {
-  canvas.width = canvas.offsetWidth;
-  canvas.height = canvas.offsetHeight;
+  const w = canvas.offsetWidth || canvas.parentElement.offsetWidth || window.innerWidth;
+  const h = canvas.offsetHeight || canvas.parentElement.offsetHeight || window.innerHeight - 80;
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+  }
 }
+
+window.addEventListener('resize', () => { resizeCanvas(); updateCamera(); });
 
 // ---- SPAWN POKEMON ----
 function spawnWildPokemon() {
@@ -98,7 +104,7 @@ function spawnWildPokemon() {
   } while (tries < 20 && (tx<0||tx>=COLS||ty<0||ty>=ROWS||state.map[ty][tx]===T.WATER||state.map[ty][tx]===T.BUILDING));
 
   if (tries >= 20) return;
-  state.wildPokemon.push({ ...poke, tx, ty, x: tx*TILE+10, y: ty*TILE+10, wobble: Math.random()*Math.PI*2, id: Date.now() });
+  state.wildPokemon.push({ ...poke, tx, ty, x: tx*TILE+TILE/2, y: ty*TILE+TILE/2, wobble: Math.random()*Math.PI*2, id: Date.now()+Math.random() });
   updateRadar();
 }
 
@@ -121,7 +127,7 @@ function updateCamera() {
 // ---- RENDER MAP ----
 function renderMap() {
   if (state.currentScreen !== 'map') return;
-  resizeCanvas();
+  if (canvas.width === 0 || canvas.height === 0) resizeCanvas();
   const { x: cx, y: cy } = state.cam;
   const vw = canvas.width, vh = canvas.height;
 
@@ -652,6 +658,9 @@ function gameLoop(ts) {
 // ---- INIT ----
 function init() {
   state.map = generateMap();
+
+  // Force canvas sizing before first render
+  resizeCanvas();
   updateCamera();
   updateHUD();
 
