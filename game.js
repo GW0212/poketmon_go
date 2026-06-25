@@ -224,9 +224,11 @@ function renderMap() {
     ctx.arc(sx+20, sy+20+bob, 24, 0, Math.PI*2);
     ctx.fill();
     const spr = getSprite(wp.id);
+    let drewSprite = false;
     if (spr.complete && spr.naturalWidth > 0) {
-      ctx.drawImage(spr, sx+2, sy+2+bob, 36, 36);
-    } else {
+      try { ctx.drawImage(spr, sx+2, sy+2+bob, 36, 36); drewSprite = true; } catch(e) {}
+    }
+    if (!drewSprite) {
       ctx.font = '28px serif';
       ctx.textAlign = 'center';
       ctx.fillText(wp.emoji, sx+20, sy+30+bob);
@@ -783,7 +785,7 @@ function gameLoop(ts) {
   if (state.currentScreen === 'map') {
     movePlayer();
     updateCamera();
-    renderMap();
+    try { renderMap(); } catch(e) { console.warn('renderMap error:', e); }
     state.spawnTimer += dt;
     if (state.spawnTimer > 4000) { state.spawnTimer = 0; spawnWildPokemon(); updateRadar(); }
   }
