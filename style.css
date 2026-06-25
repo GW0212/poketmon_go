@@ -157,6 +157,8 @@ body {
 .poke-card:active { transform: scale(0.94); }
 .poke-card.locked { filter: grayscale(1) brightness(0.45); }
 .poke-emoji { font-size: 38px; display: block; margin-bottom: 5px; }
+.poke-sprite { width: 64px; height: 64px; object-fit: contain; display: block; margin: 0 auto 4px; image-rendering: pixelated; }
+.poke-emoji-unknown { font-size: 32px; text-align: center; margin-bottom: 5px; color: #ccc; font-weight: 900; }
 .poke-name { font-size: 11px; font-weight: 700; color: #333; }
 .poke-cp { font-size: 10px; color: #888; margin-top: 2px; }
 .poke-count {
@@ -210,9 +212,11 @@ body {
 /* Bounce is on THIS child, not the parent — avoids transform conflict */
 .pokemon-bounce { animation: bounce 1.8s ease-in-out infinite; display: flex; flex-direction: column; align-items: center; }
 
-#wild-pokemon-emoji {
-  font-size: 100px; display: block; line-height: 1;
-  filter: drop-shadow(0 10px 24px rgba(0,0,0,0.35));
+#wild-pokemon-img {
+  width: 180px; height: 180px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 28px rgba(0,0,0,0.5));
+  image-rendering: auto;
 }
 
 #wild-pokemon-name {
@@ -456,7 +460,7 @@ body {
   margin-bottom: 6px; text-align: center;
 }
 .radar-entry { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
-.radar-emoji { font-size: 18px; }
+.radar-sprite { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
 .radar-info { font-size: 10px; }
 .radar-pname { font-weight: 700; color: #333; }
 .radar-dist { color: #bbb; font-size: 9px; }
@@ -498,7 +502,7 @@ body {
   animation: slideUp 0.3s ease; max-height: 72vh; overflow-y: auto;
 }
 .detail-hero { text-align: center; padding: 8px 0 18px; }
-.detail-emoji { font-size: 80px; }
+.detail-sprite { width: 120px; height: 120px; object-fit: contain; display: block; margin: 0 auto; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15)); }
 .detail-name { font-size: 26px; font-weight: 900; margin-top: 6px; }
 .detail-types { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
 .detail-stats { margin-top: 16px; }

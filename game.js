@@ -68,6 +68,27 @@ function generateMap() {
   return map;
 }
 
+// ---- SPRITE CACHE ----
+const spriteCache = {};
+function getSprite(id, large = false) {
+  const url = large
+    ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`
+    : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+  if (!spriteCache[url]) {
+    const img = new Image();
+    img.src = url;
+    spriteCache[url] = img;
+  }
+  return spriteCache[url];
+}
+
+function preloadSprites() {
+  for (const p of POKEMON_DATA) {
+    getSprite(p.id);
+    getSprite(p.id, true);
+  }
+}
+
 // ---- CANVAS SETUP ----
 const canvas = document.getElementById('map-canvas');
 const ctx = canvas.getContext('2d');
@@ -201,10 +222,15 @@ function renderMap() {
     ctx.beginPath();
     ctx.arc(sx+20, sy+20+bob, 24, 0, Math.PI*2);
     ctx.fill();
-    ctx.font = '30px serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(wp.emoji, sx+20, sy+28+bob);
-    ctx.textAlign = 'left';
+    const spr = getSprite(wp.id);
+    if (spr.complete && spr.naturalWidth > 0) {
+      ctx.drawImage(spr, sx+2, sy+2+bob, 36, 36);
+    } else {
+      ctx.font = '28px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(wp.emoji, sx+20, sy+30+bob);
+      ctx.textAlign = 'left';
+    }
   }
 
   // ---- PLAYER (Pokeball design) ----
@@ -282,7 +308,7 @@ function renderRadar() {
   for (const p of state.radarPokemon) {
     const dist = Math.round(p.dist / TILE * 10);
     html += `<div class="radar-entry">
-      <span class="radar-emoji">${p.emoji}</span>
+      <img class="radar-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png" alt="${p.name}">
       <div class="radar-info">
         <div class="radar-pname">${p.name}</div>
         <div class="radar-dist">~${dist}m</div>
@@ -374,7 +400,9 @@ function startEncounter(wp) {
   state.wildPokemon = state.wildPokemon.filter(p=>p.spawnId!==wp.spawnId);
   updateRadar();
 
-  document.getElementById('wild-pokemon-emoji').textContent = wp.emoji;
+  const imgEl = document.getElementById('wild-pokemon-img');
+  imgEl.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${wp.id}.png`;
+  imgEl.alt = wp.name;
   document.getElementById('wild-pokemon-name').textContent = wp.name;
   document.getElementById('wild-pokemon-cp').textContent = `CP ${wp.cp}`;
   const rc = RARITY_COLOR[wp.rarity];
@@ -614,7 +642,8 @@ function updatePokedexUI() {
     const have = myList.length > 0;
     const bestCp = have ? Math.max(...myList.map(p=>p.cp)) : 0;
     const rc = RARITY_COLOR[pd.rarity];
-    html += `<div class="poke-card ${have?'':'locked'}" onclick="${have?`showDetail(${pd.id})`:''}">\n      ${have && myList.length > 1 ? `<div class="poke-count">x${myList.length}</div>` : ''}\n      <span class="poke-emoji">${have ? pd.emoji : '❓'}</span>\n      <div class="poke-name">${have ? pd.name : `No.${pd.id}`}</div>\n      ${have ? `<div class="poke-cp">CP ${bestCp}</div>\n      <div style="margin-top:4px"><span class="rarity-dot" style="background:${rc}"></span><span style="font-size:10px;color:${rc}">${RARITY_LABEL[pd.rarity]}</span></div>` : ''}\n    </div>`;
+    const sprUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pd.id}.png`;
+    html += `<div class="poke-card ${have?'':'locked'}" onclick="${have?`showDetail(${pd.id})`:''}">\n      ${have && myList.length > 1 ? `<div class="poke-count">x${myList.length}</div>` : ''}\n      ${have\n        ? `<img class="poke-sprite" src="${sprUrl}" alt="${pd.name}">`\n        : `<div class="poke-emoji-unknown">?</div>`}\n      <div class="poke-name">${have ? pd.name : `No.${pd.id}`}</div>\n      ${have ? `<div class="poke-cp">CP ${bestCp}</div>\n      <div style="margin-top:4px"><span class="rarity-dot" style="background:${rc}"></span><span style="font-size:10px;color:${rc}">${RARITY_LABEL[pd.rarity]}</span></div>` : ''}\n    </div>`;
   }
   grid.innerHTML = html;
   document.getElementById('pokedex-count').textContent = `${Object.keys(state.caught).length} / ${POKEMON_DATA.length}`;
@@ -630,7 +659,7 @@ function showDetail(pokeId) {
   modal.className = 'detail-modal';
   modal.innerHTML = `<div class="detail-panel">
     <div class="detail-hero">
-      <div class="detail-emoji">${pd.emoji}</div>
+      <img class="detail-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pd.id}.png" alt="${pd.name}">
       <div class="detail-name">${pd.name}</div>
       <div style="font-size:12px;color:#aaa;">No.${String(pd.id).padStart(3,'0')}</div>
       <div class="detail-types">${pd.type.map(t=>`<span class="type-badge" style="background:${getTypeColor(t)}33;color:${getTypeColor(t)}">${t}</span>`).join('')}</div>
@@ -780,7 +809,7 @@ function init() {
     const release = () => { state.keys[key] = false; };
     btn.addEventListener('mousedown', press);
     btn.addEventListener('mouseup', release);
-    btn.addEventListener('mouseleave', release);
+    btn.addEventListener('mouseleave', release);  // stops movement when mouse leaves button
     btn.addEventListener('touchstart', press, { passive: true });
     btn.addEventListener('touchend', release);
     btn.addEventListener('touchcancel', release);
@@ -808,6 +837,8 @@ function init() {
   document.addEventListener('touchmove', onThrowMove, { passive: true });
   document.addEventListener('mouseup', onThrowEnd);
   document.addEventListener('touchend', onThrowEnd);
+
+  preloadSprites();
 
   // Spawn initial pokemon
   for (let i = 0; i < 5; i++) spawnWildPokemon();
