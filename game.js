@@ -224,9 +224,11 @@ function renderMap() {
     ctx.arc(sx+20, sy+20+bob, 24, 0, Math.PI*2);
     ctx.fill();
     const spr = getSprite(wp.id);
+    let drewSprite = false;
     if (spr.complete && spr.naturalWidth > 0) {
-      ctx.drawImage(spr, sx+2, sy+2+bob, 36, 36);
-    } else {
+      try { ctx.drawImage(spr, sx+2, sy+2+bob, 36, 36); drewSprite = true; } catch(e) {}
+    }
+    if (!drewSprite) {
       ctx.font = '28px serif';
       ctx.textAlign = 'center';
       ctx.fillText(wp.emoji, sx+20, sy+30+bob);
@@ -415,12 +417,11 @@ function startEncounter(wp) {
   updateBallSelect();
   document.getElementById('catch-result').classList.remove('show');
 
-  // Position catch-circle and shadow under the pokemon display
   const bg = document.getElementById('encounter-bg');
   const bgH = bg ? bg.offsetHeight : 600;
   const pokemonTop = bgH * 0.06;
   const pokemonEmojiH = 100;
-  const circleTop = pokemonTop + pokemonEmojiH * 0.5 - 55; // center on emoji
+  const circleTop = pokemonTop + pokemonEmojiH * 0.5 - 55;
   const circleWrap = document.getElementById('catch-circle-wrap');
   if (circleWrap) {
     circleWrap.style.top = circleTop + 'px';
@@ -434,7 +435,6 @@ function startEncounter(wp) {
     shadow.style.transform = 'translateX(-50%)';
   }
 
-  // Show ball at bottom-center of throw area
   const throwBall = throwBallEl();
   if (throwBall) {
     const area = document.getElementById('throw-area');
@@ -513,7 +513,6 @@ function onThrowEnd() {
   const drag = throwDrag;
   throwDrag = null;
 
-  // Velocity from recent trail
   let velX = 0, velY = -1;
   const trail = drag.trail;
   if (trail.length >= 2) {
@@ -551,7 +550,6 @@ function performThrow(fromX, fromY, velX) {
   const targetX = rect.width / 2;
   const targetY = rect.height * 0.22;
 
-  // Curve: based on horizontal velocity at release
   const curveAmt = velX * 80;
   const isCurve = Math.abs(velX) > 0.3;
   const spinDir = velX > 0 ? 1 : -1;
@@ -564,7 +562,6 @@ function performThrow(fromX, fromY, velX) {
     const t = Math.min((now - startTime) / duration, 1);
     const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
 
-    // Bezier curve trajectory: control point offset by curveAmt
     const cpx = (fromX + targetX) / 2 + curveAmt;
     const cpy = (fromY + targetY) / 2 - 60;
     const bx = (1-t)*(1-t)*fromX + 2*(1-t)*t*cpx + t*t*targetX;
@@ -775,7 +772,7 @@ function gameLoop(ts) {
   if (state.currentScreen === 'map') {
     movePlayer();
     updateCamera();
-    renderMap();
+    try { renderMap(); } catch(e) { console.warn('renderMap error:', e); }
     state.spawnTimer += dt;
     if (state.spawnTimer > 4000) { state.spawnTimer = 0; spawnWildPokemon(); updateRadar(); }
   }
@@ -787,7 +784,6 @@ function gameLoop(ts) {
 function init() {
   state.map = generateMap();
 
-  // Two rAF frames to ensure layout is computed before sizing canvas
   requestAnimationFrame(() => requestAnimationFrame(() => {
     resizeCanvas();
     updateCamera();
@@ -797,12 +793,10 @@ function init() {
   updateCamera();
   updateHUD();
 
-  // Keyboard: clear all keys on focus loss
   document.addEventListener('keydown', e => { state.keys[e.key] = true; });
   document.addEventListener('keyup', e => { state.keys[e.key] = false; });
   window.addEventListener('blur', () => { state.keys = {}; });
 
-  // D-pad: JS listeners with mouseleave + touchcancel support
   const DPAD_MAP = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
   document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn => {
     const key = DPAD_MAP[btn.dataset.dir];
@@ -810,27 +804,23 @@ function init() {
     const release = () => { state.keys[key] = false; };
     btn.addEventListener('mousedown', press);
     btn.addEventListener('mouseup', release);
-    btn.addEventListener('mouseleave', release);  // stops movement when mouse leaves button
+    btn.addEventListener('mouseleave', release);
     btn.addEventListener('touchstart', press, { passive: true });
     btn.addEventListener('touchend', release);
     btn.addEventListener('touchcancel', release);
   });
 
-  // Nav buttons
   document.querySelectorAll('.nav-btn[data-screen]').forEach(btn => {
     btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
   });
 
-  // Run button
   document.getElementById('btn-run').addEventListener('click', closeEncounter);
 
-  // Nav pokeball
   document.getElementById('nav-catch').addEventListener('click', () => {
     if (state.wildPokemon.length > 0) startEncounter(state.wildPokemon[0]);
     else showNotif('주변에 포켓몬이 없습니다');
   });
 
-  // Throw drag events on throw-area
   const area = document.getElementById('throw-area');
   area.addEventListener('mousedown', onThrowStart);
   area.addEventListener('touchstart', onThrowStart, { passive: true });
@@ -841,7 +831,6 @@ function init() {
 
   preloadSprites();
 
-  // Spawn initial pokemon
   for (let i = 0; i < 5; i++) spawnWildPokemon();
   updateRadar();
 
