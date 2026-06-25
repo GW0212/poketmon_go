@@ -6,11 +6,9 @@ const TILE = 40;
 const COLS = 40, ROWS = 40;
 const MAP_W = COLS * TILE, MAP_H = ROWS * TILE;
 
-// ---- TILE TYPES ----
 const T = { GRASS: 0, DEEP_GRASS: 1, WATER: 2, PATH: 3, BUILDING: 4, POKESTOP: 5, GYM: 6, SAND: 7 };
 const TILE_COLORS = ['#5DBB4D','#4CAF50','#4FC3F7','#D2B48C','#9E9E9E','#42A5F5','#FFD600','#F4E4BC'];
 
-// ---- GAME STATE ----
 const state = {
   player: { x: 20 * TILE, y: 20 * TILE, speed: 3, name: '트레이너', level: 1, xp: 0, xpMax: 100 },
   cam: { x: 0, y: 0 },
@@ -18,7 +16,7 @@ const state = {
   wildPokemon: [],
   pokestops: [],
   gyms: [],
-  caught: {},      // { pokemonId: [{ cp, level, ... }] }
+  caught: {},
   bag: { pokeball: 20, greatball: 5, ultraball: 2 },
   totalCaught: 0,
   totalWalked: 0,
@@ -35,7 +33,6 @@ const state = {
 function generateMap() {
   const map = Array.from({ length: ROWS }, () => Array(COLS).fill(T.GRASS));
 
-  // Rivers
   let rx = 5;
   for (let r = 0; r < ROWS; r++) {
     map[r][rx] = T.WATER;
@@ -43,11 +40,9 @@ function generateMap() {
     if (Math.random() < 0.15) rx = Math.max(2, Math.min(COLS-4, rx + (Math.random()<0.5?1:-1)));
   }
 
-  // Paths
   for (let c = 0; c < COLS; c++) { map[10][c] = T.PATH; map[30][c] = T.PATH; }
   for (let r = 0; r < ROWS; r++) { map[r][20] = T.PATH; }
 
-  // Deep grass patches
   for (let i = 0; i < 30; i++) {
     const pr = Math.floor(Math.random() * ROWS), pc = Math.floor(Math.random() * COLS);
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
@@ -56,7 +51,6 @@ function generateMap() {
     }
   }
 
-  // Buildings
   const bldgs = [[3,3],[3,8],[8,3],[15,15],[25,8],[32,25],[8,32],[28,32]];
   for (const [r,c] of bldgs) {
     for (let dr=0;dr<3;dr++) for (let dc=0;dc<3;dc++) {
@@ -64,10 +58,8 @@ function generateMap() {
     }
   }
 
-  // Sand beach
   for (let c=0;c<COLS;c++) { if(map[ROWS-1][c]===T.GRASS)map[ROWS-1][c]=T.SAND; if(map[ROWS-2][c]===T.GRASS)map[ROWS-2][c]=T.SAND; }
 
-  // Pokestops & Gyms
   const stops = [[5,25],[15,8],[28,18],[12,30],[22,5],[35,12]];
   const gymsPos = [[20,20],[8,15],[32,32]];
   for (const [r,c] of stops) { map[r][c]=T.POKESTOP; state.pokestops.push({r,c,lastVisit:0}); }
@@ -81,9 +73,12 @@ const canvas = document.getElementById('map-canvas');
 const ctx = canvas.getContext('2d');
 
 function resizeCanvas() {
-  const w = canvas.offsetWidth || canvas.parentElement.offsetWidth || window.innerWidth;
-  const h = canvas.offsetHeight || canvas.parentElement.offsetHeight || window.innerHeight - 80;
-  if (canvas.width !== w || canvas.height !== h) {
+  const gameEl = document.getElementById('game-container');
+  const navEl = document.getElementById('bottom-nav');
+  const w = gameEl.offsetWidth || window.innerWidth;
+  const navH = navEl ? navEl.offsetHeight : 60;
+  const h = (gameEl.offsetHeight || window.innerHeight) - navH;
+  if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
     canvas.width = w;
     canvas.height = h;
   }
@@ -127,7 +122,7 @@ function updateCamera() {
 // ---- RENDER MAP ----
 function renderMap() {
   if (state.currentScreen !== 'map') return;
-  if (canvas.width === 0 || canvas.height === 0) resizeCanvas();
+  if (canvas.width === 0 || canvas.height === 0) { resizeCanvas(); updateCamera(); }
   const { x: cx, y: cy } = state.cam;
   const vw = canvas.width, vh = canvas.height;
 
@@ -148,28 +143,23 @@ function renderMap() {
         ctx.fillStyle = 'rgba(0,100,0,0.15)';
         ctx.fillRect(sx+2,sy+2,TILE-4,TILE-4);
       }
-
       if (t === T.WATER) {
         const wave = Math.sin(Date.now()/800 + c*0.5 + r*0.3)*2;
         ctx.fillStyle = 'rgba(255,255,255,0.15)';
         ctx.fillRect(sx, sy + TILE/2 + wave, TILE, 2);
       }
-
       if (t === T.PATH) {
         ctx.strokeStyle = 'rgba(180,150,100,0.4)';
         ctx.lineWidth = 1;
         ctx.strokeRect(sx+4, sy+4, TILE-8, TILE-8);
       }
-
       if (t === T.BUILDING) {
         ctx.fillStyle = 'rgba(0,0,0,0.15)';
         ctx.fillRect(sx+2,sy+2,TILE-4,TILE-4);
-        // windows
         ctx.fillStyle = 'rgba(255,255,200,0.7)';
         ctx.fillRect(sx+6,sy+6,8,8);
         ctx.fillRect(sx+TILE-14,sy+6,8,8);
       }
-
       if (t === T.POKESTOP) {
         const ps = state.pokestops.find(p=>p.r===r&&p.c===c);
         const available = !ps || Date.now()-ps.lastVisit > 300000;
@@ -183,7 +173,6 @@ function renderMap() {
         ctx.fillText(available ? '🔵' : '⚪', sx+TILE/2, sy+TILE/2+8+bob);
         ctx.textAlign = 'left';
       }
-
       if (t === T.GYM) {
         const bob = Math.sin(Date.now()/500)*3;
         ctx.fillStyle = 'rgba(255,214,0,0.2)';
@@ -203,62 +192,81 @@ function renderMap() {
   for (const wp of state.wildPokemon) {
     const sx = wp.x - cx, sy = wp.y - cy;
     if (sx < -TILE || sx > vw+TILE || sy < -TILE || sy > vh+TILE) continue;
-
     const bob = Math.sin(now/600 + wp.wobble)*4;
-
-    // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.15)';
     ctx.beginPath();
     ctx.ellipse(sx+20, sy+42, 15, 5, 0, 0, Math.PI*2);
     ctx.fill();
-
-    // Aura
     ctx.fillStyle = RARITY_COLOR[wp.rarity] + '33';
     ctx.beginPath();
     ctx.arc(sx+20, sy+20+bob, 24, 0, Math.PI*2);
     ctx.fill();
-
     ctx.font = '30px serif';
     ctx.textAlign = 'center';
     ctx.fillText(wp.emoji, sx+20, sy+28+bob);
     ctx.textAlign = 'left';
   }
 
-  // Player
+  // ---- PLAYER (Pokeball design) ----
   const px = state.player.x - cx;
   const py = state.player.y - cy;
+  const pcx = px + 20, pcy = py + 20, pr = 22;
 
-  // Player shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.beginPath();
-  ctx.ellipse(px+20, py+44, 14, 5, 0, 0, Math.PI*2);
+  ctx.ellipse(pcx, pcy + 26, 18, 6, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // Player circle
-  const grad = ctx.createRadialGradient(px+16,py+14,2,px+20,py+20,22);
-  grad.addColorStop(0,'#fff');
-  grad.addColorStop(0.5,'#E53935');
-  grad.addColorStop(1,'#B71C1C');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(px+20, py+20, 22, 0, Math.PI*2);
-  ctx.fill();
+  // Outer glow ring
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,255,255,1)';
+  ctx.shadowBlur = 12;
   ctx.strokeStyle = 'white';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(pcx, pcy, pr + 3, 0, Math.PI*2);
   ctx.stroke();
+  ctx.restore();
 
-  // Player emoji
-  ctx.font = '22px serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('🧢', px+20, py+28);
-  ctx.textAlign = 'left';
+  // Top half - red
+  ctx.fillStyle = '#E53935';
+  ctx.beginPath();
+  ctx.moveTo(pcx - pr, pcy);
+  ctx.arc(pcx, pcy, pr, Math.PI, 0);
+  ctx.closePath();
+  ctx.fill();
 
-  // Range circle
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  // Bottom half - white
+  ctx.fillStyle = '#f5f5f5';
+  ctx.beginPath();
+  ctx.moveTo(pcx - pr, pcy);
+  ctx.arc(pcx, pcy, pr, 0, Math.PI);
+  ctx.closePath();
+  ctx.fill();
+
+  // Middle band
+  ctx.fillStyle = '#111';
+  ctx.fillRect(pcx - pr, pcy - 3, pr * 2, 6);
+
+  // Center button outer
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(pcx, pcy, 8, 0, Math.PI*2);
+  ctx.fill();
+
+  // Center button inner
+  ctx.fillStyle = 'white';
+  ctx.beginPath();
+  ctx.arc(pcx, pcy, 5, 0, Math.PI*2);
+  ctx.fill();
+
+  // Range indicator
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
   ctx.lineWidth = 1.5;
   ctx.setLineDash([4,4]);
   ctx.beginPath();
-  ctx.arc(px+20, py+20, TILE*1.8, 0, Math.PI*2);
+  ctx.arc(pcx, pcy, TILE*1.8, 0, Math.PI*2);
   ctx.stroke();
   ctx.setLineDash([]);
 }
@@ -266,8 +274,10 @@ function renderMap() {
 // ---- RADAR ----
 function renderRadar() {
   const el = document.getElementById('radar-display');
-  if (state.radarPokemon.length === 0) { el.innerHTML = '<div id="radar-title">주변 포켓몬</div><div style="font-size:11px;color:#aaa;text-align:center;padding:4px">없음</div>'; return; }
-
+  if (state.radarPokemon.length === 0) {
+    el.innerHTML = '<div id="radar-title">주변 포켓몬</div><div style="font-size:11px;color:#aaa;text-align:center;padding:4px">없음</div>';
+    return;
+  }
   let html = '<div id="radar-title">주변 포켓몬</div>';
   for (const p of state.radarPokemon) {
     const dist = Math.round(p.dist / TILE * 10);
@@ -295,7 +305,6 @@ function movePlayer() {
     const nx = Math.max(0, Math.min(MAP_W-TILE, p.x + dx*p.speed));
     const ny = Math.max(0, Math.min(MAP_H-TILE, p.y + dy*p.speed));
     const tc = Math.floor(nx/TILE), tr = Math.floor(ny/TILE);
-
     if (state.map[tr] && state.map[tr][tc] !== T.WATER && state.map[tr][tc] !== T.BUILDING) {
       if (!state.lastPos) state.lastPos = {x:p.x,y:p.y};
       const dist = Math.hypot(nx-state.lastPos.x, ny-state.lastPos.y);
@@ -309,22 +318,16 @@ function movePlayer() {
 // ---- PROXIMITY CHECKS ----
 function checkProximity() {
   const px = state.player.x + 20, py = state.player.y + 20;
-
-  // Check wild pokemon
   for (const wp of state.wildPokemon) {
     if (Math.hypot(wp.x+10 - px, wp.y+10 - py) < TILE * 1.5) {
       startEncounter(wp);
       return;
     }
   }
-
-  // Check pokestops
   for (const ps of state.pokestops) {
     const sx = ps.c*TILE+20, sy = ps.r*TILE+20;
     if (Math.hypot(sx-px,sy-py) < TILE*1.8) {
-      if (Date.now()-ps.lastVisit > 300000) {
-        visitPokestop(ps);
-      }
+      if (Date.now()-ps.lastVisit > 300000) visitPokestop(ps);
     }
   }
 }
@@ -336,7 +339,6 @@ function visitPokestop(ps) {
   state.bag.pokeball += balls;
   rewards.push({ icon:'⚫', name:`포켓볼 x${balls}` });
   if (Math.random() < 0.3) { state.bag.greatball++; rewards.push({ icon:'🔵', name:'수퍼볼 x1' }); }
-
   document.getElementById('pokestop-title').textContent = '포켓스탑 방문!';
   document.getElementById('pokestop-items').innerHTML = rewards.map(r=>`<div class="stop-item"><div class="stop-item-icon">${r.icon}</div><div class="stop-item-name">${r.name}</div></div>`).join('');
   const popup = document.getElementById('pokestop-popup');
@@ -379,7 +381,6 @@ function startEncounter(wp) {
   document.getElementById('wild-pokemon-rarity').textContent = RARITY_LABEL[wp.rarity];
   document.getElementById('wild-pokemon-rarity').style.background = rc + '33';
   document.getElementById('wild-pokemon-rarity').style.color = rc;
-
   document.getElementById('enc-types').innerHTML = wp.type.map(t=>`<span class="type-badge" style="background:${getTypeColor(t)}33;color:${getTypeColor(t)}">${t}</span>`).join('');
 
   updateBallSelect();
@@ -407,42 +408,127 @@ function updateBallSelect() {
 
 function selectBall(id) { state.selectedBall = id; updateBallSelect(); }
 
-function throwPokeball() {
+// ---- THROW MECHANIC (drag to throw) ----
+let throwDrag = null;
+const throwBallEl = () => document.getElementById('throwing-ball');
+const throwAreaEl = () => document.getElementById('throw-area');
+
+function getPointerPos(e) {
+  const rect = throwAreaEl().getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+}
+
+function onThrowStart(e) {
+  if (state.currentScreen !== 'encounter' || !state.currentEncounter) return;
+  const pos = getPointerPos(e);
+  throwDrag = {
+    startX: pos.x, startY: pos.y,
+    curX: pos.x, curY: pos.y,
+    trail: [{ x: pos.x, y: pos.y, t: Date.now() }]
+  };
+  const ball = throwBallEl();
+  ball.style.left = (pos.x - 20) + 'px';
+  ball.style.top = (pos.y - 20) + 'px';
+  ball.style.display = 'block';
+  ball.style.transition = 'none';
+  ball.style.transform = '';
+}
+
+function onThrowMove(e) {
+  if (!throwDrag) return;
+  const pos = getPointerPos(e);
+  throwDrag.curX = pos.x;
+  throwDrag.curY = pos.y;
+  throwDrag.trail.push({ x: pos.x, y: pos.y, t: Date.now() });
+  if (throwDrag.trail.length > 10) throwDrag.trail.shift();
+  const ball = throwBallEl();
+  ball.style.left = (pos.x - 20) + 'px';
+  ball.style.top = (pos.y - 20) + 'px';
+}
+
+function onThrowEnd() {
+  if (!throwDrag) return;
+  const drag = throwDrag;
+  throwDrag = null;
+
+  // Velocity from recent trail
+  let velX = 0, velY = -1;
+  const trail = drag.trail;
+  if (trail.length >= 2) {
+    const recent = trail.slice(-5);
+    const dt = (recent[recent.length-1].t - recent[0].t) || 16;
+    velX = (recent[recent.length-1].x - recent[0].x) / dt;
+    velY = (recent[recent.length-1].y - recent[0].y) / dt;
+  }
+
+  const draggedUp = drag.startY - drag.curY;
+  if (draggedUp > 40 || velY < -0.3) {
+    performThrow(drag.curX, drag.curY, velX);
+  } else {
+    throwBallEl().style.display = 'none';
+  }
+}
+
+function performThrow(fromX, fromY, velX) {
   const enc = state.currentEncounter;
   if (!enc) return;
+
   const ballCount = state.bag[state.selectedBall];
-  if (ballCount <= 0) { showNotif(`${state.selectedBall === 'pokeball' ? '포켓볼' : state.selectedBall === 'greatball' ? '수퍼볼' : '울트라볼'}이 없습니다!`); return; }
+  if (ballCount <= 0) {
+    showNotif('볼이 없습니다!');
+    throwBallEl().style.display = 'none';
+    return;
+  }
 
   state.bag[state.selectedBall]--;
   updateBallSelect();
   updateHUD();
 
-  // Animate pokeball
-  const ball = document.getElementById('throwing-ball');
-  const area = document.getElementById('throw-area');
+  const area = throwAreaEl();
   const rect = area.getBoundingClientRect();
-  ball.style.left = (rect.width/2 - 20) + 'px';
-  ball.style.top = (rect.height - 80) + 'px';
-  ball.style.display = 'block';
-  ball.style.transition = 'none';
+  const targetX = rect.width / 2;
+  const targetY = rect.height * 0.22;
 
-  setTimeout(() => {
-    ball.style.transition = 'left 0.5s ease-out, top 0.5s ease-out, transform 0.5s';
-    ball.style.left = (rect.width/2 - 20) + 'px';
-    ball.style.top = '20%';
-    ball.style.transform = 'rotate(720deg) scale(0.6)';
-  }, 50);
+  // Curve: based on horizontal velocity at release
+  const curveAmt = velX * 80;
+  const isCurve = Math.abs(velX) > 0.3;
+  const spinDir = velX > 0 ? 1 : -1;
 
-  // Bounce effect
-  setTimeout(() => {
-    ball.classList.add('shaking');
-    setTimeout(() => {
-      ball.classList.remove('shaking');
-      ball.style.display = 'none';
-      ball.style.transform = '';
-      resolveCatch(enc);
-    }, 1400);
-  }, 600);
+  const duration = 650;
+  const startTime = performance.now();
+  const ball = throwBallEl();
+
+  function animate(now) {
+    const t = Math.min((now - startTime) / duration, 1);
+    const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+    // Bezier curve trajectory: control point offset by curveAmt
+    const cpx = (fromX + targetX) / 2 + curveAmt;
+    const cpy = (fromY + targetY) / 2 - 60;
+    const bx = (1-t)*(1-t)*fromX + 2*(1-t)*t*cpx + t*t*targetX;
+    const by = (1-t)*(1-t)*fromY + 2*(1-t)*t*cpy + t*t*targetY;
+    const rotation = spinDir * ease * (isCurve ? 900 : 540);
+    const scale = 1 - ease * 0.5;
+
+    ball.style.left = (bx - 20) + 'px';
+    ball.style.top = (by - 20) + 'px';
+    ball.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      ball.classList.add('shaking');
+      setTimeout(() => {
+        ball.classList.remove('shaking');
+        ball.style.display = 'none';
+        ball.style.transform = '';
+        resolveCatch(enc);
+      }, 1400);
+    }
+  }
+
+  requestAnimationFrame(animate);
 }
 
 function resolveCatch(enc) {
@@ -461,7 +547,6 @@ function resolveCatch(enc) {
     textEl.textContent = '잡았다!';
     emojiEl.textContent = enc.emoji;
     subEl.textContent = `${enc.name} (CP ${enc.cp}) 포획 성공!`;
-
     if (!state.caught[enc.id]) state.caught[enc.id] = [];
     state.caught[enc.id].push({ cp: enc.cp, level: enc.level, ...enc });
     state.totalCaught++;
@@ -483,20 +568,20 @@ function closeEncounter() {
   document.getElementById('encounter-screen').classList.remove('active');
   state.currentScreen = 'map';
   state.currentEncounter = null;
+  throwDrag = null;
+  throwBallEl().style.display = 'none';
 }
 
 // ---- POKEDEX UI ----
 function updatePokedexUI() {
   const grid = document.getElementById('pokedex-grid');
   if (!grid) return;
-
   let html = '';
   for (const pd of POKEMON_DATA) {
     const myList = state.caught[pd.id] || [];
     const have = myList.length > 0;
     const bestCp = have ? Math.max(...myList.map(p=>p.cp)) : 0;
     const rc = RARITY_COLOR[pd.rarity];
-
     html += `<div class="poke-card ${have?'':'locked'}" onclick="${have?`showDetail(${pd.id})`:''}">
       ${have && myList.length > 1 ? `<div class="poke-count">x${myList.length}</div>` : ''}
       <span class="poke-emoji">${have ? pd.emoji : '❓'}</span>
@@ -515,7 +600,6 @@ function showDetail(pokeId) {
   const myList = state.caught[pd.id]||[];
   const bestCp = Math.max(...myList.map(p=>p.cp));
   const rc = RARITY_COLOR[pd.rarity];
-
   const modal = document.createElement('div');
   modal.className = 'detail-modal';
   modal.innerHTML = `<div class="detail-panel">
@@ -592,7 +676,6 @@ function showNotif(msg) {
 }
 
 // ---- SCREEN NAVIGATION ----
-const SCREENS = ['map','pokedex','bag','profile'];
 function switchScreen(screen) {
   if (state.currentScreen === 'encounter') return;
   state.currentScreen = screen;
@@ -603,16 +686,6 @@ function switchScreen(screen) {
   if (screen === 'pokedex') { document.getElementById('pokedex-screen').style.display='flex'; updatePokedexUI(); }
   else if (screen === 'bag') { document.getElementById('bag-screen').style.display='flex'; updateBagUI(); }
   else if (screen === 'profile') { document.getElementById('profile-screen').style.display='flex'; updateProfileUI(); }
-}
-
-// ---- D-PAD ----
-function dpadPress(dir) {
-  const map = { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight' };
-  state.keys[map[dir]] = true;
-}
-function dpadRelease(dir) {
-  const map = { up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight' };
-  state.keys[map[dir]] = false;
 }
 
 // ---- TOUCH MAP DRAG ----
@@ -647,7 +720,6 @@ function gameLoop(ts) {
     movePlayer();
     updateCamera();
     renderMap();
-
     state.spawnTimer += dt;
     if (state.spawnTimer > 4000) { state.spawnTimer = 0; spawnWildPokemon(); updateRadar(); }
   }
@@ -659,40 +731,67 @@ function gameLoop(ts) {
 function init() {
   state.map = generateMap();
 
-  // Force canvas sizing before first render
+  // Two rAF frames to ensure layout is computed before sizing canvas
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    resizeCanvas();
+    updateCamera();
+  }));
+
   resizeCanvas();
   updateCamera();
   updateHUD();
 
-  // Keyboard
+  // Keyboard: clear all keys on focus loss
   document.addEventListener('keydown', e => { state.keys[e.key] = true; });
   document.addEventListener('keyup', e => { state.keys[e.key] = false; });
+  window.addEventListener('blur', () => { state.keys = {}; });
+
+  // D-pad: JS listeners with mouseleave + touchcancel support
+  const DPAD_MAP = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
+  document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn => {
+    const key = DPAD_MAP[btn.dataset.dir];
+    const press = () => { state.keys[key] = true; };
+    const release = () => { state.keys[key] = false; };
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);  // stops movement when mouse leaves button
+    btn.addEventListener('touchstart', press, { passive: true });
+    btn.addEventListener('touchend', release);
+    btn.addEventListener('touchcancel', release);
+  });
 
   // Nav buttons
   document.querySelectorAll('.nav-btn[data-screen]').forEach(btn => {
     btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
   });
 
-  // Throw button
-  document.getElementById('btn-throw').addEventListener('click', throwPokeball);
+  // Run button
   document.getElementById('btn-run').addEventListener('click', closeEncounter);
+
+  // Nav pokeball
   document.getElementById('nav-catch').addEventListener('click', () => {
     if (state.wildPokemon.length > 0) startEncounter(state.wildPokemon[0]);
     else showNotif('주변에 포켓몬이 없습니다');
   });
 
+  // Throw drag events on throw-area
+  const area = document.getElementById('throw-area');
+  area.addEventListener('mousedown', onThrowStart);
+  area.addEventListener('touchstart', onThrowStart, { passive: true });
+  document.addEventListener('mousemove', onThrowMove);
+  document.addEventListener('touchmove', onThrowMove, { passive: true });
+  document.addEventListener('mouseup', onThrowEnd);
+  document.addEventListener('touchend', onThrowEnd);
+
   // Spawn initial pokemon
   for (let i = 0; i < 5; i++) spawnWildPokemon();
   updateRadar();
 
-  // Active nav
   document.querySelector('[data-screen="map"]')?.classList.add('active');
-
   requestAnimationFrame(gameLoop);
 }
 
 window.addEventListener('load', init);
 window.selectBall = selectBall;
 window.showDetail = showDetail;
-window.dpadPress = dpadPress;
-window.dpadRelease = dpadRelease;
+window.switchScreen = switchScreen;

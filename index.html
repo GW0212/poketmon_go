@@ -35,21 +35,13 @@
     <!-- D-pad -->
     <div id="dpad">
       <div></div>
-      <button class="dpad-btn"
-        ontouchstart="dpadPress('up')" ontouchend="dpadRelease('up')"
-        onmousedown="dpadPress('up')" onmouseup="dpadRelease('up')">▲</button>
+      <button class="dpad-btn" data-dir="up">▲</button>
       <div></div>
-      <button class="dpad-btn"
-        ontouchstart="dpadPress('left')" ontouchend="dpadRelease('left')"
-        onmousedown="dpadPress('left')" onmouseup="dpadRelease('left')">◀</button>
+      <button class="dpad-btn" data-dir="left">◀</button>
       <div class="dpad-btn center"></div>
-      <button class="dpad-btn"
-        ontouchstart="dpadPress('right')" ontouchend="dpadRelease('right')"
-        onmousedown="dpadPress('right')" onmouseup="dpadRelease('right')">▶</button>
+      <button class="dpad-btn" data-dir="right">▶</button>
       <div></div>
-      <button class="dpad-btn"
-        ontouchstart="dpadPress('down')" ontouchend="dpadRelease('down')"
-        onmousedown="dpadPress('down')" onmouseup="dpadRelease('down')">▼</button>
+      <button class="dpad-btn" data-dir="down">▼</button>
       <div></div>
     </div>
 
@@ -100,14 +92,13 @@
         <div style="flex:1">
           <div id="enc-types"></div>
         </div>
-        <div style="font-size:12px;color:#888">⬅ 스와이프하여 던지기</div>
+        <div style="font-size:12px;color:#888">↑ 위로 드래그하여 던지기</div>
       </div>
 
       <div id="ball-select"></div>
 
       <div id="encounter-actions">
         <button id="btn-run" class="enc-btn">🏃 도망</button>
-        <button id="btn-throw" class="enc-btn">⚫ 던지기</button>
       </div>
     </div>
   </div>
