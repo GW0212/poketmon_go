@@ -76,6 +76,7 @@ function getSprite(id, large = false) {
     : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
   if (!spriteCache[url]) {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     img.src = url;
     spriteCache[url] = img;
   }
