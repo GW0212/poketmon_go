@@ -99,7 +99,7 @@ function spawnWildPokemon() {
   } while (tries < 20 && (tx<0||tx>=COLS||ty<0||ty>=ROWS||state.map[ty][tx]===T.WATER||state.map[ty][tx]===T.BUILDING));
 
   if (tries >= 20) return;
-  state.wildPokemon.push({ ...poke, tx, ty, x: tx*TILE+TILE/2, y: ty*TILE+TILE/2, wobble: Math.random()*Math.PI*2, id: Date.now()+Math.random() });
+  state.wildPokemon.push({ ...poke, tx, ty, x: tx*TILE+TILE/2, y: ty*TILE+TILE/2, wobble: Math.random()*Math.PI*2, spawnId: Date.now()+Math.random() });
   updateRadar();
 }
 
@@ -371,7 +371,7 @@ function updateHUD() {
 // ---- ENCOUNTER ----
 function startEncounter(wp) {
   state.currentEncounter = wp;
-  state.wildPokemon = state.wildPokemon.filter(p=>p.id!==wp.id);
+  state.wildPokemon = state.wildPokemon.filter(p=>p.spawnId!==wp.spawnId);
   updateRadar();
 
   document.getElementById('wild-pokemon-emoji').textContent = wp.emoji;
@@ -385,6 +385,38 @@ function startEncounter(wp) {
 
   updateBallSelect();
   document.getElementById('catch-result').classList.remove('show');
+
+  // Position catch-circle and shadow under the pokemon display
+  const bg = document.getElementById('encounter-bg');
+  const bgH = bg ? bg.offsetHeight : 600;
+  const pokemonTop = bgH * 0.06;
+  const pokemonEmojiH = 100;
+  const circleTop = pokemonTop + pokemonEmojiH * 0.5 - 55; // center on emoji
+  const circleWrap = document.getElementById('catch-circle-wrap');
+  if (circleWrap) {
+    circleWrap.style.top = circleTop + 'px';
+    circleWrap.style.left = '50%';
+    circleWrap.style.transform = 'translateX(-50%)';
+  }
+  const shadow = document.getElementById('pokemon-shadow');
+  if (shadow) {
+    shadow.style.top = (pokemonTop + pokemonEmojiH + 10) + 'px';
+    shadow.style.left = '50%';
+    shadow.style.transform = 'translateX(-50%)';
+  }
+
+  // Show ball at bottom-center of throw area
+  const throwBall = throwBallEl();
+  if (throwBall) {
+    const area = document.getElementById('throw-area');
+    const aW = area ? area.offsetWidth : 390;
+    const aH = area ? area.offsetHeight : 450;
+    throwBall.style.left = (aW / 2 - 26) + 'px';
+    throwBall.style.top = (aH - 90) + 'px';
+    throwBall.style.display = 'block';
+    throwBall.style.transform = '';
+  }
+
   document.getElementById('encounter-screen').classList.add('active');
   state.currentScreen = 'encounter';
 }
