@@ -63,28 +63,51 @@
   <!-- ===== ENCOUNTER SCREEN ===== -->
   <div id="encounter-screen">
     <div id="encounter-bg">
+      <!-- Grass texture strips -->
       <div style="position:absolute;bottom:42%;left:0;right:0;height:6px;background:rgba(255,255,255,0.1)"></div>
+
       <div id="wild-pokemon-display">
-        <span id="wild-pokemon-emoji">⚡</span>
-        <div id="wild-pokemon-name">피카츄</div>
-        <div id="wild-pokemon-cp">CP 523</div>
-        <div id="wild-pokemon-rarity">희귀</div>
+        <div class="pokemon-bounce">
+          <span id="wild-pokemon-emoji">⚡</span>
+          <div id="wild-pokemon-name">피카츄</div>
+          <div id="wild-pokemon-cp">CP 523</div>
+          <div id="wild-pokemon-rarity">희귀</div>
+        </div>
+        <div id="pokemon-shadow"></div>
       </div>
+
+      <!-- Catch circle -->
+      <div id="catch-circle-wrap">
+        <div id="catch-circle-outer"></div>
+        <div id="catch-circle-inner"></div>
+      </div>
+
+      <!-- Throw area (invisible) -->
       <div id="throw-area">
         <div id="throwing-ball"></div>
       </div>
+
+      <!-- Throw hint -->
+      <div id="throw-hint">↑ 위로 드래그하여 던지기</div>
+
+      <!-- Catch result overlay -->
       <div id="catch-result">
         <div id="catch-result-emoji">⚡</div>
         <div id="catch-result-text">잡았다!</div>
         <div id="catch-result-sub">피카츄 포획 성공!</div>
       </div>
     </div>
+
+    <!-- Bottom panel -->
     <div id="encounter-bottom">
       <div id="encounter-poke-info">
-        <div style="flex:1"><div id="enc-types"></div></div>
-        <div style="font-size:12px;color:#888">↑ 위로 드래그하여 던지기</div>
+        <div style="flex:1">
+          <div id="enc-types"></div>
+        </div>
       </div>
+
       <div id="ball-select"></div>
+
       <div id="encounter-actions">
         <button id="btn-run" class="enc-btn">🏃 도망</button>
       </div>
