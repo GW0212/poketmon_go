@@ -42,7 +42,9 @@ body {
 #map-canvas {
   flex: 1;
   display: block;
+  width: 100%;
   cursor: pointer;
+  min-height: 0;
 }
 
 /* ====== HUD ====== */
