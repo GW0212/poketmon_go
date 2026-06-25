@@ -68,26 +68,11 @@ function generateMap() {
   return map;
 }
 
-// ---- SPRITE CACHE ----
-const spriteCache = {};
-function getSprite(id, large = false) {
-  const url = large
+// ---- SPRITE URLS (HTML img only - never drawn on canvas to avoid CORS taint) ----
+function getSpriteUrl(id, large = false) {
+  return large
     ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`
     : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
-  if (!spriteCache[url]) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = url;
-    spriteCache[url] = img;
-  }
-  return spriteCache[url];
-}
-
-function preloadSprites() {
-  for (const p of POKEMON_DATA) {
-    getSprite(p.id);
-    getSprite(p.id, true);
-  }
 }
 
 // ---- CANVAS SETUP ----
@@ -209,7 +194,7 @@ function renderMap() {
     }
   }
 
-  // Wild Pokemon
+  // Wild Pokemon (emoji only on canvas - no external image drawImage to avoid CORS taint)
   const now = Date.now();
   for (const wp of state.wildPokemon) {
     const sx = wp.x - cx, sy = wp.y - cy;
@@ -223,17 +208,10 @@ function renderMap() {
     ctx.beginPath();
     ctx.arc(sx+20, sy+20+bob, 24, 0, Math.PI*2);
     ctx.fill();
-    const spr = getSprite(wp.id);
-    let drewSprite = false;
-    if (spr.complete && spr.naturalWidth > 0) {
-      try { ctx.drawImage(spr, sx+2, sy+2+bob, 36, 36); drewSprite = true; } catch(e) {}
-    }
-    if (!drewSprite) {
-      ctx.font = '28px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(wp.emoji, sx+20, sy+30+bob);
-      ctx.textAlign = 'left';
-    }
+    ctx.font = '28px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(wp.emoji, sx+20, sy+30+bob);
+    ctx.textAlign = 'left';
   }
 
   // ---- PLAYER (Pokeball design) ----
@@ -241,13 +219,11 @@ function renderMap() {
   const py = state.player.y - cy;
   const pcx = px + 20, pcy = py + 20, pr = 22;
 
-  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.beginPath();
   ctx.ellipse(pcx, pcy + 26, 18, 6, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // Outer glow ring
   ctx.save();
   ctx.shadowColor = 'rgba(255,255,255,1)';
   ctx.shadowBlur = 12;
@@ -258,7 +234,6 @@ function renderMap() {
   ctx.stroke();
   ctx.restore();
 
-  // Top half - red
   ctx.fillStyle = '#E53935';
   ctx.beginPath();
   ctx.moveTo(pcx - pr, pcy);
@@ -266,7 +241,6 @@ function renderMap() {
   ctx.closePath();
   ctx.fill();
 
-  // Bottom half - white
   ctx.fillStyle = '#f5f5f5';
   ctx.beginPath();
   ctx.moveTo(pcx - pr, pcy);
@@ -274,23 +248,19 @@ function renderMap() {
   ctx.closePath();
   ctx.fill();
 
-  // Middle band
   ctx.fillStyle = '#111';
   ctx.fillRect(pcx - pr, pcy - 3, pr * 2, 6);
 
-  // Center button outer
   ctx.fillStyle = '#111';
   ctx.beginPath();
   ctx.arc(pcx, pcy, 8, 0, Math.PI*2);
   ctx.fill();
 
-  // Center button inner
   ctx.fillStyle = 'white';
   ctx.beginPath();
   ctx.arc(pcx, pcy, 5, 0, Math.PI*2);
   ctx.fill();
 
-  // Range indicator
   ctx.strokeStyle = 'rgba(255,255,255,0.25)';
   ctx.lineWidth = 1.5;
   ctx.setLineDash([4,4]);
@@ -828,8 +798,6 @@ function init() {
   document.addEventListener('touchmove', onThrowMove, { passive: true });
   document.addEventListener('mouseup', onThrowEnd);
   document.addEventListener('touchend', onThrowEnd);
-
-  preloadSprites();
 
   for (let i = 0; i < 5; i++) spawnWildPokemon();
   updateRadar();
