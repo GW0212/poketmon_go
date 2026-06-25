@@ -68,26 +68,11 @@ function generateMap() {
   return map;
 }
 
-// ---- SPRITE CACHE ----
-const spriteCache = {};
-function getSprite(id, large = false) {
-  const url = large
+// ---- SPRITE URLS (HTML img only - never drawn on canvas to avoid CORS taint) ----
+function getSpriteUrl(id, large = false) {
+  return large
     ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`
     : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
-  if (!spriteCache[url]) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = url;
-    spriteCache[url] = img;
-  }
-  return spriteCache[url];
-}
-
-function preloadSprites() {
-  for (const p of POKEMON_DATA) {
-    getSprite(p.id);
-    getSprite(p.id, true);
-  }
 }
 
 // ---- CANVAS SETUP ----
@@ -223,17 +208,10 @@ function renderMap() {
     ctx.beginPath();
     ctx.arc(sx+20, sy+20+bob, 24, 0, Math.PI*2);
     ctx.fill();
-    const spr = getSprite(wp.id);
-    let drewSprite = false;
-    if (spr.complete && spr.naturalWidth > 0) {
-      try { ctx.drawImage(spr, sx+2, sy+2+bob, 36, 36); drewSprite = true; } catch(e) {}
-    }
-    if (!drewSprite) {
-      ctx.font = '28px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(wp.emoji, sx+20, sy+30+bob);
-      ctx.textAlign = 'left';
-    }
+    ctx.font = '28px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(wp.emoji, sx+20, sy+30+bob);
+    ctx.textAlign = 'left';
   }
 
   // ---- PLAYER (Pokeball design) ----
@@ -849,7 +827,6 @@ function init() {
   document.addEventListener('mouseup', onThrowEnd);
   document.addEventListener('touchend', onThrowEnd);
 
-  preloadSprites();
 
   // Spawn initial pokemon
   for (let i = 0; i < 5; i++) spawnWildPokemon();
